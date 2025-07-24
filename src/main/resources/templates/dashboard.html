@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrador de Tipificaciones - Dashboard</title>
+ <link rel="stylesheet" th:href="@{/resources/css/bootstrap.min.css}">
+<link rel="stylesheet" th:href="@{/resources/css/all.min.css}">
+<link rel="stylesheet" th:href="@{/resources/css/dashboard.css}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+             <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-tags"></i>
+                Administrador de Tipificaciones
+            </a>
+            
+            <div class="d-flex align-items-center">
+                <span class="user-info me-3">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Bienvenido, <strong th:text="${usuario?.nombre ?: 'Usuario'}">Usuario</strong>
+                </span>
+                
+                <form th:action="@{/logout}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="page-title">Campañas</h1>
+                    <p class="page-subtitle">Crea y edita desde aquí las campañas disponibles en su cuenta.</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-primary-gradient" data-bs-toggle="modal" data-bs-target="#modalNuevaCampana">
+                        <i class="fas fa-plus me-2"></i>Agregar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row stats-cards">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <div class="stat-number" th:text="${estadisticas?.totalCampanas ?: '0'}">0</div>
+                    <div class="stat-label">Total Campañas</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-number" th:text="${estadisticas?.campanasActivas ?: '0'}">0</div>
+                    <div class="stat-label">Activos</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-number" th:text="${estadisticas?.totalProductos ?: '0'}">0</div>
+                    <div class="stat-label">Total Productos</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catalogs Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-table me-2"></i>
+                    Catálogo de Campañas
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <!-- Table with sample data -->
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>ID</th>
+                                <th>Productos</th>
+                                <th>Lanzamiento</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Campañas dinámicas desde la base de datos -->
+                            <tr th:each="campana : ${campanas}" th:if="${campanas != null and !campanas.isEmpty()}">
+                                <td>
+                                    <strong th:text="${campana.nombre}">Nombre de la Campaña</strong><br>
+                                    <small class="text-muted" th:text="'ID: ' + ${campana.campanaId}">ID: 1</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary" th:text="${campana.campanaId}">1</span>
+                                </td>
+                                <td th:text="${campanaService.obtenerNumeroProductosPorCampana(campana.campanaId)}">0</td>
+                                <td>
+                                    <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}">10/06/2025</span>
+                                </td>
+                                <td>
+                                    <span th:class="${campana.activo == '1'} ? 'badge badge-success' : 'badge badge-danger'" 
+                                          th:text="${campana.activo == '1'} ? 'Activo' : 'Inactivo'">Activo</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" th:onclick="|irA('@{/campanas/editar/{id}(id=${campana.campanaId})}')|">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" th:onclick="|irA('@{/campanas/visualizar/{id}(id=${campana.campanaId})}')|">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" th:onclick="|eliminarCampana('@{/campanas/eliminar/{id}(id=${campana.campanaId})}')|">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- Mensaje cuando no hay campañas -->
+                            <tr th:if="${campanas == null or campanas.isEmpty()}">
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-folder-open"></i>
+                                    <h5>No hay campañas disponibles</h5>
+                                    <p>Crea tu primera campaña haciendo clic en "Agregar"</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nueva Campaña -->
+    <div class="modal fade" id="modalNuevaCampana" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="border-radius: 16px; border: none;">
+                <div class="modal-header" style="border-bottom: 2px solid var(--border-color);">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Crear Nueva Campaña
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formNuevaCampana" th:action="@{/api/crear-campana}" method="post">
+                        <div class="mb-3">
+                            <label for="nombreCampana" class="form-label">Nombre de la Campaña</label>
+                            <input type="text" class="form-control" id="nombreCampana" 
+                                   placeholder="Ej: Campaña Verano 2025" required>
+                            <div class="invalid-feedback">
+                                Por favor ingrese un nombre para la campaña.
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            La campaña se creará como <strong>Activa</strong> por defecto.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 2px solid var(--border-color);">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary-gradient" id="btnCrearCampana">
+                        <i class="fas fa-save me-2"></i>Crear Campaña
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+ <script th:src="@{/resources/js/bootstrap.bundle.min.js}"></script>
+ <script th:src="@{/resources/js/dashboard.js}"></script>
+ 
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizar Campaña - Administrador de Tipificaciones</title>
+ <link rel="stylesheet" th:href="@{/resources/css/bootstrap.min.css}">
+<link rel="stylesheet" th:href="@{/resources/css/all.min.css}">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --sidebar-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-muted: #718096;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --danger-color: #f56565;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f7fafc;
+            color: #2d3748;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border-bottom: none;
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white !important;
+        }
+        
+        .navbar-brand i {
+            margin-right: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+        
+        .user-info {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .main-container {
+            padding: 2rem 0;
+        }
+        
+        .page-header {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 0;
+        }
+        
+        .btn-back {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-back:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 2px solid var(--border-color);
+            padding: 1.5rem 2rem;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background: var(--sidebar-bg);
+            color: #4a5568;
+            font-weight: 600;
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .table tbody td {
+            padding: 1.25rem 1.5rem;
+            border-color: var(--border-color);
+            vertical-align: middle;
+        }
+        
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.03);
+        }
+        
+        .badge-activo {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success-color);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .badge-inactivo {
+            background: rgba(245, 101, 101, 0.1);
+            color: var(--danger-color);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .stats-info {
+            background: rgba(102, 126, 234, 0.05);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-info strong {
+            color: var(--primary-color);
+        }
+        /* Estilos para el filtro */
+        #filtroGlobal {
+            border-left: none;
+        }
+        
+        .input-group-text {
+            background-color: #f8f9fa;
+            border-right: none;
+        }
+        
+        #filtroGlobal:focus {
+            box-shadow: none;
+            border-color: #ced4da;
+        }
+        
+        .btn-outline-secondary:hover {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+        
+        /* Animación de fade para filas filtradas */
+        #productosTableBody tr {
+            transition: opacity 0.3s ease;
+        }
+        
+        #productosTableBody tr[style*="display: none"] {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="fas fa-tags"></i>
+                Administrador de Tipificaciones
+            </a>
+            
+            <div class="d-flex align-items-center">
+                <span class="user-info me-3">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Bienvenido, <strong th:text="${usuario?.nombre ?: 'Usuario'}">Usuario</strong>
+                </span>
+                
+                <form th:action="@{/logout}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="page-title" th:text="${campana?.nombre ?: 'Campaña'}">Campaña</h1>
+                    <p class="page-subtitle">Visualización de productos y servicios asociados</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a th:href="@{/dashboard}" class="btn btn-back">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Info -->
+        <div class="stats-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Esta campaña tiene <strong th:text="${productos?.size() ?: 0}">0</strong> productos asociados.
+            ID de Campaña: <strong th:text="${campana?.campanaId ?: 'N/A'}">N/A</strong>
+        </div>
+
+        <!-- Products Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-list me-2"></i>
+                    Productos de la Campaña
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Servicio</th>
+                                <th>Subservicio</th>
+                                <th>Activo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productosTableBody">
+                            <!-- Productos dinámicos -->
+                            <tr th:each="producto : ${productos}" th:if="${productos != null and !productos.isEmpty()}">
+                                <td>
+                                    <strong th:text="${producto.nombreProducto}">Nombre Producto</strong>
+                                </td>
+                                <td th:text="${producto.nombreServicio}">Nombre Servicio</td>
+                                <td th:text="${producto.nombreSubservicio}">Nombre Subservicio</td>
+                                <td>
+                                    <span th:class="${producto.activo == '1'} ? 'badge badge-activo' : 'badge badge-inactivo'"
+                                          th:text="${producto.activo == '1'} ? 'Y' : 'N'">Y</span>
+                                </td>
+                            </tr>
+                            
+                            <!-- Mensaje cuando no hay productos -->
+                            <tr th:if="${productos == null or productos.isEmpty()}">
+                                <td colspan="4" class="empty-state">
+                                    <i class="fas fa-box-open"></i>
+                                    <h5>No hay productos asociados</h5>
+                                    <p>Esta campaña no tiene productos asignados actualmente</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+ <script th:src="@{/resources/js/bootstrap.bundle.min.js}"></script>
+    <script>
+        // Animación de entrada
+        document.addEventListener('DOMContentLoaded', function() {
+            const card = document.querySelector('.card');
+            const statsInfo = document.querySelector('.stats-info');
+            
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }
+            
+            if (statsInfo) {
+                statsInfo.style.opacity = '0';
+                setTimeout(() => {
+                    statsInfo.style.transition = 'all 0.5s ease';
+                    statsInfo.style.opacity = '1';
+                }, 50);
+            }
+        });
+    </script>
+</body>
+</html>

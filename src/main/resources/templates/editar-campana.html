@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Campaña - Administrador de Tipificaciones</title>
+ <link rel="stylesheet" th:href="@{/resources/css/bootstrap.min.css}">
+<link rel="stylesheet" th:href="@{/resources/css/all.min.css}">
+<link rel="stylesheet" th:href="@{/resources/css/editar.css}">
+ <script th:inline="javascript">
+        /*<![CDATA[*/
+            // Esta variable contendrá '/BBAdmin/' en producción, o '/' en local.
+            const contextPath = /*[[@{/}]]*/ '';
+        /*]]>*/
+    </script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="fas fa-tags"></i>
+                Administrador de Tipificaciones
+            </a>
+            
+            <div class="d-flex align-items-center">
+                <span class="user-info me-3">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Bienvenido, <strong th:text="${usuario?.nombre ?: 'Usuario'}">Usuario</strong>
+                </span>
+                
+                <form th:action="@{/logout}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="page-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar: <span th:text="${campana?.nombre ?: 'Campaña'}">Campaña</span>
+                    </h1>
+                    <p class="page-subtitle">Gestione los productos y servicios de esta campaña</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a th:href="@{/dashboard}" class="btn btn-back">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Globales y Filtro -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="global-actions">
+                    <h5><i class="fas fa-tools"></i> Acciones Globales</h5>
+                    <button class="btn btn-action-primary" onclick="agregarProductos()">
+                        <i class="fas fa-plus"></i> Agregar Productos
+                    </button>
+                    <button class="btn btn-action-danger" onclick="desactivarProductosSeleccionados()">
+                        <i class="fas fa-ban"></i> Desactivar Productos Seleccionados
+                    </button>
+                    <span class="selected-count" id="selected-count">0 seleccionados</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="filter-section">
+                    <h5><i class="fas fa-filter"></i> Filtrar Productos</h5>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="filtroGlobal" 
+                               placeholder="Buscar en producto, servicio o subservicio..."
+                               onkeyup="filtrarProductos()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="limpiarFiltro()">
+                            <i class="fas fa-times"></i> Limpiar
+                        </button>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Mostrando: <span id="contadorFiltrados">0</span> de <span id="totalProductos">0</span> productos</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-list me-2"></i>
+                        Productos de la Campaña
+                    </h3>
+                    <div class="form-check">
+                        <input class="form-check-input checkbox-custom" type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                        <label class="form-check-label" for="selectAll">
+                            Seleccionar todos
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th width="50">Seleccionar</th>
+                                <th>Producto</th>
+                                <th>Servicio</th>
+                                <th>Subservicio</th>
+                                <th>Activo</th>
+                                <th width="300">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productosTableBody">
+                            <!-- Productos dinámicos -->
+                            <tr th:each="producto, iter : ${productos}" th:if="${productos != null and !productos.empty}">
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input checkbox-custom producto-checkbox" 
+                                           th:id="'producto-' + ${iter.index}"
+                                           th:value="${producto.productoId}"
+                                           onchange="updateSelectedCount()">
+                                </td>
+                                <td>
+                                    <strong th:text="${producto.nombreProducto}">Nombre Producto</strong>
+                                </td>
+                                <td th:text="${producto.nombreServicio}">Nombre Servicio</td>
+                                <td th:text="${producto.nombreSubservicio}">Nombre Subservicio</td>
+                                <td>
+                                    <span th:class="${producto.activo == '1'} ? 'badge badge-activo' : 'badge badge-inactivo'"
+                                          th:text="${producto.activo == '1'} ? 'Y' : 'N'">Y</span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-action btn-edit" 
+                                            th:attr="onclick='editarProducto(' + ${producto.productoId} + ',' + ${producto.servicioId ?: 0} + ',' + ${producto.subservicioId ?: 0} + ',&quot;' + ${producto.nombreProducto} + '&quot;,&quot;' + ${producto.nombreServicio ?: ''} + '&quot;,&quot;' + ${producto.nombreSubservicio ?: ''} + '&quot;)'" 
+                                            title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-action btn-add-service" 
+                                            th:attr="onclick='agregarServicio(' + ${producto.productoId} + ')'" 
+                                            title="Agregar Servicio">
+                                        <i class="fas fa-plus-circle"></i> Servicio
+                                    </button>
+                                    <button type="button" class="btn btn-action btn-add-service" 
+                                            th:attr="onclick='agregarSubservicio(' + ${producto.productoId} + ',' + ${producto.servicioId ?: 0} + ')'" 
+                                            title="Agregar Subservicio">
+                                        <i class="fas fa-plus-square"></i> Subservicio
+                                    </button>
+                                    <button type="button" class="btn btn-action btn-deactivate" 
+                                            th:attr="onclick='desactivarProducto(' + ${producto.productoId} + ')'" 
+                                            title="Desactivar">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- Mensaje cuando no hay productos -->
+                            <tr th:if="${productos == null or productos.empty}">
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-box-open"></i>
+                                    <h5>No hay productos asociados</h5>
+                                    <p>Agregue productos a esta campaña usando el botón "Agregar Productos"</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales para edición -->
+    <!-- Modal Editar Producto/Servicio/Subservicio -->
+    <div class="modal fade" id="editarModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Información</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editarForm">
+                        <input type="hidden" id="editProductoId">
+                        <input type="hidden" id="editServicioId">
+                        <input type="hidden" id="editSubservicioId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Producto</label>
+                            <input type="text" class="form-control" id="editNombreProducto" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Servicio</label>
+                            <input type="text" class="form-control" id="editNombreServicio" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Subservicio</label>
+                            <input type="text" class="form-control" id="editNombreSubservicio" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarCambios()">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Modal Agregar Producto -->
+    <div class="modal fade" id="agregarProductoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nuevo Producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="agregarProductoForm">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Producto</label>
+                            <input type="text" class="form-control" id="nuevoProductoNombre" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (opcional)</label>
+                            <textarea class="form-control" id="nuevoProductoDescripcion" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="crearProducto()">Crear Producto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Agregar Servicio -->
+    <div class="modal fade" id="agregarServicioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nuevo Servicio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="agregarServicioForm">
+                        <input type="hidden" id="servicioProductoId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Servicio</label>
+                            <input type="text" class="form-control" id="nuevoServicioNombre" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (opcional)</label>
+                            <textarea class="form-control" id="nuevoServicioDescripcion" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="crearServicio()">Crear Servicio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Subservicio -->
+    <div class="modal fade" id="agregarSubservicioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nuevo Subservicio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="agregarSubservicioForm">
+                        <input type="hidden" id="subservicioServicioId">
+                        <input type="hidden" id="subservicioProductoId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Subservicio</label>
+                            <input type="text" class="form-control" id="nuevoSubservicioNombre" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (opcional)</label>
+                            <textarea class="form-control" id="nuevoSubservicioDescripcion" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="crearSubservicio()">Crear Subservicio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+ <script th:src="@{/resources/js/bootstrap.bundle.min.js}"></script>
+ <script th:src="@{/resources/js/editar.js}"></script>
+
+</body>
+</html>
